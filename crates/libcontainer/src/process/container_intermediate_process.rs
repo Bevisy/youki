@@ -210,10 +210,18 @@ pub fn container_intermediate_process(
     // configuration. The youki main process can decide what to do with the init
     // process and the intermediate process can just exit safely after the job
     // is done.
-    let pid = fork::container_clone_sibling(cb).map_err(|err| {
-        tracing::error!("failed to fork init process: {}", err);
-        IntermediateProcessError::InitProcess(err)
-    })?;
+    let pid = match fork::container_clone_sibling(cb) {
+        Ok(pid) => pid,
+        Err(err) => {
+            // CLONE_PARENT can fail after we unsharED a PID namespace; fall
+            // back to a plain clone (SIGCHLD) whose child runs the same cb.
+            tracing::warn!("container_clone_sibling failed ({}), falling back to clone", err);
+            fork::container_clone(cb).map_err(|err2| {
+                tracing::error!("fallback fork init process failed: {}", err2);
+                IntermediateProcessError::InitProcess(err2)
+            })?
+        }
+    };
 
     // Close the exec_notify_fd in this process
     if let ContainerType::TenantContainer { exec_notify_fd } = args.container_type {
