@@ -45,6 +45,10 @@ pub fn container_init_process(
     init_receiver: &mut channel::InitReceiver,
 ) -> Result<()> {
     let mut ctx = InitContext::try_from(args)?;
+    tracing::info!(
+        "apparmor-ctx: process_profile={:?} via=spec",
+        args.spec.process().and_then(|p| p.apparmor_profile())
+    );
 
     setsid().map_err(|err| {
         tracing::error!(?err, "failed to setsid to create a session");
