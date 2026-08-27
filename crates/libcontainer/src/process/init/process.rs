@@ -49,7 +49,7 @@ pub fn container_init_process(
         "apparmor-ctx: process_profile={:?}",
         args.spec
             .process()
-            .map(|p| format!("{:?}", p.apparmor_profile()))
+            .map(|p| format!("{:?}", p.apparmor_profile().as_ref()))
     );
 
     setsid().map_err(|err| {
