@@ -12,7 +12,7 @@ use caps::Capability;
 use nix::fcntl::OFlag;
 use nix::unistd::{Pid, pipe2, read};
 use oci_spec::runtime::{
-    Capabilities as SpecCapabilities, Capability as SpecCapability, LinuxBuilder,
+    Capabilities as SpecCapabilities, Capability as SpecCapability, Linux, LinuxBuilder,
     LinuxCapabilities, LinuxCapabilitiesBuilder, LinuxNamespace, LinuxNamespaceBuilder,
     LinuxNamespaceType, Process, ProcessBuilder, Spec, UserBuilder,
 };
@@ -471,6 +471,37 @@ impl TenantContainerBuilder {
         }
 
         let linux = linux_builder.build()?;
+
+        // Exec must inherit the container's security knobs. The LinuxBuilder
+        // rebuild above only reproduces namespaces/cgroups/personality, so
+        // carry over seccomp + masked/readonly paths from the original spec —
+        // without this, tenant exec silently loses the seccomp filter.
+        if let (Ok(base), Some(orig)) = (serde_json::to_value(&linux), spec.linux()) {
+            if let serde_json::Value::Object(mut obj) = base {
+                if let Ok(o) = serde_json::to_value(orig) {
+                    if let serde_json::Value::Object(orig_obj) = o {
+                        for k in [
+                            "seccomp",
+                            "maskedPaths",
+                            "readonlyPaths",
+                            "rootfsPropagation",
+                            "resources",
+                        ] {
+                            if let Some(v) = orig_obj.get(k).cloned() {
+                                obj.insert(k.to_string(), v);
+                            }
+                        }
+                    }
+                }
+                if let Ok(merged) =
+                    serde_json::from_value::<Linux>(serde_json::Value::Object(obj))
+                {
+                    spec.set_process(Some(process)).set_linux(Some(merged));
+                    return Ok(());
+                }
+            }
+        }
+
         spec.set_process(Some(process)).set_linux(Some(linux));
 
         Ok(())
