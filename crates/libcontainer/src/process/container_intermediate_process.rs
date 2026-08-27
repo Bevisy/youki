@@ -213,13 +213,11 @@ pub fn container_intermediate_process(
     let pid = match fork::container_clone_sibling(cb) {
         Ok(pid) => pid,
         Err(err) => {
-            // CLONE_PARENT can fail after we unsharED a PID namespace; fall
-            // back to a plain clone (SIGCHLD) whose child runs the same cb.
-            tracing::warn!("container_clone_sibling failed ({}), falling back to clone", err);
-            fork::container_clone(cb).map_err(|err2| {
-                tracing::error!("fallback fork init process failed: {}", err2);
-                IntermediateProcessError::InitProcess(err2)
-            })?
+            // CLONE_PARENT can fail once a PID namespace has been unshared;
+            // fail loudly instead of silently running the workload without
+            // init-process setup (apparmor/seccomp/uid mapping).
+            tracing::error!("container_clone_sibling failed for init process: {}", err);
+            return Err(IntermediateProcessError::InitProcess(err));
         }
     };
 
