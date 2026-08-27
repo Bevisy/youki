@@ -153,6 +153,7 @@ pub fn container_intermediate_process(
 
     let cb: CloneCb = {
         Box::new(|| {
+            tracing::info!("apparmor-ctx: ENTER init-clone cb");
             if let Err(ret) = prctl::set_name("youki:[2:INIT]") {
                 tracing::error!(?ret, "failed to set name for child process");
                 return ret;
