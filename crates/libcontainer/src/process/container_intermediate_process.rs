@@ -40,13 +40,13 @@ pub enum IntermediateProcessError {
 type Result<T> = std::result::Result<T, IntermediateProcessError>;
 
 pub fn container_intermediate_process(
-    tracing::info!("apparmor-ctx: ENTER container_intermediate_process");
     args: &ContainerArgs,
     intermediate_chan: &mut (channel::IntermediateSender, channel::IntermediateReceiver),
     init_chan: &mut (channel::InitSender, channel::InitReceiver),
     intermediate_main_sender: &mut channel::MainSender,
     init_main_sender: &mut channel::MainSender,
 ) -> Result<()> {
+    tracing::info!("apparmor-ctx: ENTER container_intermediate_process");
     let (inter_sender, inter_receiver) = intermediate_chan;
     let (init_sender, init_receiver) = init_chan;
     let command = args.syscall.create_syscall();
