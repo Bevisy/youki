@@ -181,6 +181,7 @@ pub fn container_init_process(
     }
 
     if let Some(profile) = ctx.process.apparmor_profile() {
+        tracing::info!(profile = %profile, "apparmor: applying profile for tenant/init");
         apparmor::apply_profile(profile).map_err(|err| {
             tracing::error!(?err, "failed to apply apparmor profile");
             InitProcessError::AppArmor(err)
