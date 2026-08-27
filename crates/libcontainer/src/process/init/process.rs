@@ -44,10 +44,12 @@ pub fn container_init_process(
     main_sender: &mut channel::MainSender,
     init_receiver: &mut channel::InitReceiver,
 ) -> Result<()> {
+    tracing::info!("apparmor-ctx: ENTER container_init_process type={:?}", args.container_type);
     let mut ctx = InitContext::try_from(args)?;
     tracing::info!(
-        "apparmor-ctx: has_process={}",
-        args.spec.process().is_some()
+        "apparmor-ctx: has_process={} ctx_aa={:?}",
+        args.spec.process().is_some(),
+        ctx.process.apparmor_profile()
     );
 
     setsid().map_err(|err| {
