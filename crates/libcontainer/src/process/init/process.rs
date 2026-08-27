@@ -46,8 +46,10 @@ pub fn container_init_process(
 ) -> Result<()> {
     let mut ctx = InitContext::try_from(args)?;
     tracing::info!(
-        "apparmor-ctx: process_profile={:?} via=spec",
-        args.spec.process().and_then(|p| p.apparmor_profile())
+        "apparmor-ctx: process_profile={:?}",
+        args.spec
+            .process()
+            .map(|p| format!("{:?}", p.apparmor_profile()))
     );
 
     setsid().map_err(|err| {
