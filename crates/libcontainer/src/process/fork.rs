@@ -118,7 +118,10 @@ fn clone3(cb: &mut CloneCb, flags: u64, exit_signal: Option<u64>) -> Result<Pid,
         0 => {
             // Inside the cloned process, we execute the callback and exit with
             // the return code.
-            std::process::exit(cb());
+            tracing::info!("apparmor-ctx: clone child invoking cb");
+            let code = cb();
+            tracing::info!("apparmor-ctx: cb returned {code}");
+            std::process::exit(code);
         }
         ret if ret >= 0 => Ok(Pid::from_raw(ret as i32)),
         ret => Err(CloneError::UnknownErrno(ret as i32)),
