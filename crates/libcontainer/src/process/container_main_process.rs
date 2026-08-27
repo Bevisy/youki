@@ -50,6 +50,7 @@ pub enum ProcessError {
 type Result<T> = std::result::Result<T, ProcessError>;
 
 pub fn container_main_process(container_args: &ContainerArgs) -> Result<Pid> {
+    tracing::info!("apparmor-ctx: ENTER container_main_process");
     // We use a set of channels to communicate between parent and child process.
     // Each channel is uni-directional. Because we will pass these channel to
     // cloned process, we have to be deligent about closing any unused channel.
