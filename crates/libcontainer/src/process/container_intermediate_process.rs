@@ -210,13 +210,12 @@ pub fn container_intermediate_process(
     // configuration. The youki main process can decide what to do with the init
     // process and the intermediate process can just exit safely after the job
     // is done.
-    let pid = match fork::container_clone_sibling(cb) {
+    let pid = match fork::container_clone(cb) {
         Ok(pid) => pid,
         Err(err) => {
-            // CLONE_PARENT can fail once a PID namespace has been unshared;
-            // fail loudly instead of silently running the workload without
-            // init-process setup (apparmor/seccomp/uid mapping).
-            tracing::error!("container_clone_sibling failed for init process: {}", err);
+            // The CLONE_PARENT variant has proven unreliable once a PID
+            // namespace is unshared; a plain SIGCHLD clone runs the same cb.
+            tracing::error!("container_clone failed for init process: {}", err);
             return Err(IntermediateProcessError::InitProcess(err));
         }
     };
