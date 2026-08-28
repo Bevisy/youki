@@ -40,9 +40,13 @@ impl RootFS {
     ) -> Result<()> {
         let mut flags = MsFlags::MS_REC;
         match linux.rootfs_propagation().as_deref() {
-            Some("shared") => flags |= MsFlags::MS_SHARED,
-            Some("private") => flags |= MsFlags::MS_PRIVATE,
-            Some("slave" | "unbindable") | None => flags |= MsFlags::MS_SLAVE,
+            // OCI spellings: "r*" variants are the recursive forms of the
+            // same mode. The base flags already carry MS_REC, so each r
+            // alias maps onto its plain counterpart.
+            Some("shared" | "rshared") => flags |= MsFlags::MS_SHARED,
+            Some("private" | "rprivate") => flags |= MsFlags::MS_PRIVATE,
+            Some("slave" | "rslave") => flags |= MsFlags::MS_SLAVE,
+            Some("unbindable") | None => flags |= MsFlags::MS_SLAVE,
             Some(unknown) => {
                 return Err(RootfsError::UnknownRootfsPropagation(unknown.to_string()));
             }
@@ -129,7 +133,7 @@ impl RootFS {
     pub fn adjust_root_mount_propagation(&self, linux: &Linux) -> Result<()> {
         let rootfs_propagation = linux.rootfs_propagation().as_deref();
         let flags = match rootfs_propagation {
-            Some("shared") => Some(MsFlags::MS_SHARED),
+            Some("shared" | "rshared") => Some(MsFlags::MS_SHARED),
             Some("unbindable") => Some(MsFlags::MS_UNBINDABLE),
             _ => None,
         };
